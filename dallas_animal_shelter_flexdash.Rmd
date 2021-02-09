@@ -1,0 +1,53 @@
+---
+title: "Dallas Animal Shelter Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+
+dallas_shelter_data <- readr::read_csv("FY2020_Dallas_Animal_Shelter_Data.csv") %>% 
+  janitor::clean_names()
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Chart A
+
+```{r}
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+dallas_shelter_data %>% 
+  count(animal_type, sort = TRUE) %>% 
+  mutate(animal_type = stringr::str_to_title(animal_type),
+         animal_type = as.factor(animal_type)) %>% 
+  DT::datatable(colnames = c("Animal Type"),
+                filter = "top",
+                rownames = FALSE)
+```
+
+### Chart C
+
+```{r}
+dallas_shelter_data %>% 
+  count(outcome_type, sort = TRUE)
+```
+
+Metrics they may want to measure:
+total adoptions (over time?)
+Average time between intake/outcome
+Intake counts + sub
+outtake counts + sub
+Staff metrics

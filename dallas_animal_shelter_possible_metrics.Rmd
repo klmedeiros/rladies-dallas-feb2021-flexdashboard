@@ -1,0 +1,123 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#cran
+library(tidyverse)
+library(lubridate)
+
+# non-cran
+# devtools::install_github("datacamp/tidymetrics")
+library(tidymetrics)
+```
+
+Metrics they may want to measure:
+*total adoptions (over time?)
+*Average time between intake/outcome
+*Intake counts + sub
+*outcomes counts + sub
+*Staff metrics
+
+```{r total_adoptions}
+dallas_shelter_data %>% 
+  count(month)
+
+# what you choose as date can make a big difference!
+dallas_shelter_data %>% 
+  mutate(date = lubridate::mdy(intake_date)) %>% 
+  tidymetrics::cross_by_periods("months") %>% 
+  summarize(nb_intakes = n()) %>% 
+  ggplot(aes(date, nb_intakes)) +
+  geom_line()
+
+# this isn't working but in theory:
+dallas_shelter_data %>% 
+  mutate(date = lubridate::mdy(outcome_date)) %>% 
+  tidymetrics::cross_by_periods("months") %>% 
+  summarize(nb_outcomes = n()) %>% 
+  ggplot(aes(date, nb_outcomes)) +
+  geom_line()
+```
+
+
+```{r avg_time}
+dallas_shelter_data %>% 
+  # make them dates
+  mutate(intake_date = lubridate::mdy(intake_date),
+         outcome_date = lubridate::mdy(outcome_date),
+         due_out = lubridate::mdy(due_out)) %>% 
+  # calculate some key dates
+  mutate(days_between_income_outcome = outcome_date - intake_date,
+         days_outcome_overdue = outcome_date - due_out) %>% 
+  # summarize
+  summarize(avg_days_between_income_outcome = mean(days_between_income_outcome, na.rm = TRUE),
+            avg_days_outcome_overdue = mean(days_outcome_overdue, na.rm = TRUE)) 
+# may want to also round these
+
+valueBox(avg_days_, icon = "fa-cat")
+valueBox(avg_days_, icon = "fa-dog")
+```
+
+```{r intake_counts}
+# just intakes
+dallas_shelter_data %>% 
+  count(intake_type, sort = TRUE)
+
+dallas_shelter_data %>% 
+  count(intake_type) %>% 
+  mutate(intake_type = forcats::fct_reorder(intake_type, n)) %>% 
+  ggplot(aes(intake_type, n)) +
+  geom_col() +
+  coord_flip()
+
+# intakes + sub
+dallas_shelter_data %>% 
+  count(intake_type, intake_subtype)
+
+dallas_shelter_data %>% 
+  count(intake_type, intake_subtype) %>% 
+  mutate(intake_subtype = forcats::fct_reorder(intake_subtype, n)) %>% 
+  ggplot(aes(intake_subtype, n)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~intake_type, scales = "free_y") # tbh free all scales
+```
+
+```{r outcomes}
+# outcomes
+dallas_shelter_data %>% 
+  count(outcome_type, sort = TRUE)
+
+dallas_shelter_data %>% 
+  count(outcome_type) %>% 
+  mutate(outcome_type = forcats::fct_reorder(outcome_type, n)) %>% 
+  ggplot(aes(outcome_type, n)) +
+  geom_col() +
+  coord_flip()
+
+# outcomes + subtypes
+dallas_shelter_data %>% 
+  count(outcome_type, outcome_subtype)
+
+dallas_shelter_data %>% 
+  count(outcome_type, outcome_subtype) %>% 
+  mutate(outcome_subtype = forcats::fct_reorder(outcome_subtype, n)) %>% 
+  ggplot(aes(outcome_subtype, n)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~outcome_type, scales = "free")
+```
+
+```{r staff_metrics}
+dallas_shelter_data %>% 
+  count(staff_id, sort = TRUE)
+
+dallas_shelter_data %>% 
+  mutate(date = lubridate::mdy(intake_date)) %>% 
+  tidymetrics::cross_by_periods("months") %>% 
+  summarize(n_distinct(staff_id))
+```
